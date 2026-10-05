@@ -1,0 +1,9 @@
+.venv
+data
+logs
+runtime
+results
+__pycache__
+**/__pycache__
+.git
+*.md

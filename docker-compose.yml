@@ -1,0 +1,122 @@
+# One container per service replica. Node B containers exist only in the ft profile.
+# Restart policy is applied after startup: baseline stays "no", ft becomes unless-stopped.
+x-common: &common
+  build: .
+  restart: "no"
+  init: true
+  user: "${HOST_UID}:${HOST_GID}"
+  volumes:
+    - ./data:/app/data
+    - ./logs:/app/logs
+    - ./runtime:/app/runtime
+  networks:
+    - campus
+
+services:
+  gateway-a:
+    <<: *common
+    container_name: campus-gateway-a
+    profiles: ["baseline", "ft"]
+    command: ["python", "-m", "uvicorn", "services.gateway:app", "--host", "0.0.0.0", "--port", "8001"]
+    ports: ["8001:8001"]
+    environment:
+      FT_MODE: ${FT_MODE:-baseline}
+      IN_DOCKER: "1"
+      INSTANCE_ID: gateway-a
+      NODE_ID: a
+      SERVICE: gateway
+
+  gateway-b:
+    <<: *common
+    container_name: campus-gateway-b
+    profiles: ["ft"]
+    command: ["python", "-m", "uvicorn", "services.gateway:app", "--host", "0.0.0.0", "--port", "8002"]
+    ports: ["8002:8002"]
+    environment:
+      FT_MODE: ${FT_MODE:-ft}
+      IN_DOCKER: "1"
+      INSTANCE_ID: gateway-b
+      NODE_ID: b
+      SERVICE: gateway
+
+  student-a:
+    <<: *common
+    container_name: campus-student-a
+    profiles: ["baseline", "ft"]
+    command: ["python", "-m", "uvicorn", "services.student:app", "--host", "0.0.0.0", "--port", "8101"]
+    ports: ["8101:8101"]
+    environment:
+      FT_MODE: ${FT_MODE:-baseline}
+      IN_DOCKER: "1"
+      INSTANCE_ID: student-a
+      NODE_ID: a
+      SERVICE: student
+
+  student-b:
+    <<: *common
+    container_name: campus-student-b
+    profiles: ["ft"]
+    command: ["python", "-m", "uvicorn", "services.student:app", "--host", "0.0.0.0", "--port", "8102"]
+    ports: ["8102:8102"]
+    environment:
+      FT_MODE: ${FT_MODE:-ft}
+      IN_DOCKER: "1"
+      INSTANCE_ID: student-b
+      NODE_ID: b
+      SERVICE: student
+
+  payment-a:
+    <<: *common
+    container_name: campus-payment-a
+    profiles: ["baseline", "ft"]
+    command: ["python", "-m", "uvicorn", "services.payment:app", "--host", "0.0.0.0", "--port", "8201"]
+    ports: ["8201:8201"]
+    environment:
+      FT_MODE: ${FT_MODE:-baseline}
+      IN_DOCKER: "1"
+      INSTANCE_ID: payment-a
+      NODE_ID: a
+      SERVICE: payment
+
+  payment-b:
+    <<: *common
+    container_name: campus-payment-b
+    profiles: ["ft"]
+    command: ["python", "-m", "uvicorn", "services.payment:app", "--host", "0.0.0.0", "--port", "8202"]
+    ports: ["8202:8202"]
+    environment:
+      FT_MODE: ${FT_MODE:-ft}
+      IN_DOCKER: "1"
+      INSTANCE_ID: payment-b
+      NODE_ID: b
+      SERVICE: payment
+
+  academic-a:
+    <<: *common
+    container_name: campus-academic-a
+    profiles: ["baseline", "ft"]
+    command: ["python", "-m", "uvicorn", "services.academic:app", "--host", "0.0.0.0", "--port", "8301"]
+    ports: ["8301:8301"]
+    environment:
+      FT_MODE: ${FT_MODE:-baseline}
+      IN_DOCKER: "1"
+      INSTANCE_ID: academic-a
+      NODE_ID: a
+      SERVICE: academic
+
+  academic-b:
+    <<: *common
+    container_name: campus-academic-b
+    profiles: ["ft"]
+    command: ["python", "-m", "uvicorn", "services.academic:app", "--host", "0.0.0.0", "--port", "8302"]
+    ports: ["8302:8302"]
+    environment:
+      FT_MODE: ${FT_MODE:-ft}
+      IN_DOCKER: "1"
+      INSTANCE_ID: academic-b
+      NODE_ID: b
+      SERVICE: academic
+
+networks:
+  campus:
+    name: campus

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Campus dependability</title>
+  <style>
+    :root {
+      --paper: #f3efe6;
+      --ink: #1b1914;
+      --muted: #5e584e;
+      --line: #d9d0c3;
+      --up: #1d6b45;
+      --down: #9d2c2c;
+      --panel: #fffdf8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font: 16px/1.5 "Iowan Old Style", Palatino, Georgia, serif;
+    }
+    main { max-width: 920px; margin: 0 auto; padding: 48px 24px 72px; }
+    header { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; border-bottom: 1px solid var(--ink); padding-bottom: 18px; }
+    h1 { font-size: 40px; line-height: 1; font-weight: 500; margin: 0; letter-spacing: -0.03em; }
+    p { color: var(--muted); }
+    .mode { font: 12px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 28px; }
+    article { background: var(--panel); border: 1px solid var(--line); padding: 16px 16px 12px; }
+    h2 { font: 13px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 12px; }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-top: 1px solid var(--line); font: 14px/1.3 ui-sans-serif, system-ui, sans-serif; }
+    .up { color: var(--up); }
+    .down { color: var(--down); }
+    .unknown { color: var(--muted); }
+    footer { margin-top: 28px; font: 13px/1.4 ui-sans-serif, system-ui, sans-serif; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <div class="mode" id="mode">loading</div>
+        <h1>Campus</h1>
+      </div>
+      <p id="summary">Checking which replicas are serving.</p>
+    </header>
+    <section class="grid" id="grid"></section>
+    <footer>This page reads gateway health checks. A red replica can fail without taking the campus down when another replica of that service is still green.</footer>
+  </main>
+  <script>
+    const grid = document.getElementById("grid");
+    async function refresh() {
+      const response = await fetch("/api/health");
+      const data = await response.json();
+      document.getElementById("mode").textContent = data.mode + " mode";
+      document.getElementById("summary").textContent = data.system_up
+        ? "Every service has a live replica."
+        : "At least one service has no live replica.";
+      const groups = {};
+      for (const row of data.roster) {
+        (groups[row.service] ||= []).push(row);
+      }
+      grid.innerHTML = Object.entries(groups).map(([service, rows]) => `
+        <article>
+          <h2>${service}</h2>
+          <ul>
+            ${rows.map((row) => `<li><span>${row.id}</span><span class="${row.status}">${row.status}</span></li>`).join("")}
+          </ul>
+        </article>
+      `).join("");
+    }
+    refresh();
+    setInterval(refresh, 1000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+#!/bin/sh
+set -e
+ROOT=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+PY="$ROOT/.venv/bin/python"
+if [ ! -x "$PY" ]; then
+  echo "Create the virtualenv first:" >&2
+  echo "  python3 -m venv .venv && .venv/bin/pip install -r requirements.txt" >&2
+  exit 1
+fi
+export HOST_UID="$(id -u)"
+export HOST_GID="$(id -g)"
+cd "$ROOT"
+if [ "${1:-}" = "down" ]; then
+  exec docker compose -p campus --profile baseline --profile ft down --remove-orphans
+fi
+if [ "${1:-}" = "up" ]; then
+  shift
+  mode="${1:-ft}"
+  export FT_MODE="$mode"
+  if [ "$mode" = "ft" ]; then
+    docker compose -p campus --profile ft up -d --build
+    ids=$(docker ps -q --filter name=campus-)
+    if [ -n "$ids" ]; then
+      # A killed container comes back. An explicit stop (whole node held down) does not.
+      docker update --restart=unless-stopped $ids >/dev/null
+    fi
+    echo "Fault-tolerant campus is up. Dashboard: http://127.0.0.1:8001"
+    echo "Stop it with: ./campus down"
+    exit 0
+  fi
+  exec docker compose -p campus --profile "$mode" up --build
+fi
+exec "$PY" -m experiments.run "$@"
